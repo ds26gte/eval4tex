@@ -1,0 +1,731 @@
+\input tex2page
+\input btxmac
+\input texnames.sty
+\input picscheme
+
+% last change: 2012-04-29
+
+\let\n\noindent
+\def\meta[#1]{{\em #1}}
+\let\c\centerline
+\let\f\numberedfootnote
+
+\def\quote{\bgroup\narrower\smallbreak}
+\def\endquote{\smallbreak\egroup}
+
+\ifx\shipout\undefined
+\externaltitle{An \char`\\eval for TeX}
+\fi
+
+%\title{PicScheme}
+
+%\title{An {\bf\tt\char`\\}eval for TeX}
+\title{An {\bf\p{\eval}} for \TeX}
+
+\c{Being an uncomplicated way of using Scheme}
+\c{to specify typographically difficult elements}
+\c{such as pictures in one's \TeX\ document}
+\c{and have them automatically convert to appropriate
+and}
+\c{pleasing output in both the printed and online}
+\c{versions of the document}
+
+%\c{A TeX picture environment}
+%\c{that uses Scheme as its extension language}
+
+\medskip
+
+\c{\htmlonly Download \endhtmlonly
+\urlh{eval4tex.tar.bz2}{Version 20090506}}
+%\c{Included with \urlh{tex2page-doc.html}{TeX2page}}
+\c{\urlh{http://www.ccs.neu.edu/~dorai}{Dorai Sitaram}}
+%\c{(PicScheme is part of the
+%\urlh{tex2page-doc.html}{TeX2page} distribution)}
+
+\bigskip
+
+%Before we talk about the pictures, let me describe
+%how to set up Scheme as an extension language for TeX.
+%The mechanism can then be used for adding other
+%features to TeX besides pictures.
+
+\n I shall first describe how to set up Scheme as an
+extension language for \TeX~\cite{tex,latex}, then show how this
+mechanism can add powerful features to \TeX, using
+as example a high-level picture language.
+
+\medskip
+
+\tableofcontents
+
+\beginchapter 1 The eval feature
+
+Consider a \TeX\ document \p{circle.tex} with
+the following contents:
+\index{eval4tex.tex@\p{eval4tex.tex}}
+\index{eval@\p{\eval}}
+
+\verbwritefile picscheme-pi-value
+\verbwrite{
+The ratio of the circumference of a circle
+to its diameter is
+\eval{
+;following prints pi, because cos(pi) = -1
+(display (acos -1))
+}.
+}
+\verbwritefile picscheme-done
+
+\p+
+\input eval4tex  % defines the \eval macro
+
+The ratio of the circumference of a circle
+to its diameter is
+\eval{
++
+\q{
+;following prints pi, because cos(pi) = -1
+(display (acos -1))
+}
+\p+
+}.
+
+\bye
++
+
+\n  We have chosen a plain \TeX\ document for
+our example, but the same approach works for
+LaTeX documents too.
+
+\p{circle.tex} first inputs the \TeX\ macro
+file \p{eval4tex.tex}, which is available in the
+eval4tex distribution, and which defines
+a \TeX\ macro
+called \p{\eval}.  This \p{\eval} macro is used in the body of
+\p{circle.tex} and its argument is some Scheme code
+enclosed in braces.
+
+Now run \TeX\ on \p{circle.tex}:
+
+\p{
+tex circle
+}
+
+\n (If \p{circle.tex} were a La\TeX\ file, you would use
+\p{latex circle} here.) This creates an
+auxiliary file called \p{circle.eval4tex}
+that extracts the \p{\eval}-embedded Scheme code from \p{circle.tex}.
+
+Now evaluate the Scheme file \p{circle.eval4tex}.  For example, with
+Racket, you could do
+
+\p{
+racket -f circle.eval4tex
+}
+
+\n This produces an auxiliary \TeX\ file \p{circle-Z-E-1.tex}
+containing an appropriate \TeX\ replacement for the
+\p{\eval}'d Scheme code in \p{circle.tex}.  In general,
+you will get an aux \TeX\ file
+for each \p{\eval} in
+the source document, and if the source document is
+named \p{circle.tex}, the aux files are named
+\p{circle-Z-E-|meta[n].tex}, where \p{|meta[n] = 1, 2,
+|dots}.
+
+Re-running \TeX\ on \p{circle.tex} will now insert the
+aux file \p{circle-Z-E-1.tex} at the point of
+the \p{\eval}, so the final DVI output,
+\p{circle.dvi}, looks like:
+
+\quote
+\input picscheme-pi-value
+\endquote
+
+To summarize, we did
+
+\p{
+tex circle; racket -f circle.eval4tex; tex circle
+}
+
+\n The first call to \p{tex} wrote out an aux file; the
+call to \p{eval4tex} processed this aux file to produce
+one or more other aux files; and the final call to
+\p{tex} slurped these latter aux files into the
+document.
+
+This strategy is quite common in the \TeX\ world.  The
+popular \TeX-support programs Bib\TeX\ and
+MakeIndex, which generate
+bibliographies and indices respectively, both operate
+this way.
+
+\beginsection \TeX2page
+
+You can also run the program \TeX2page~\cite{tex2page} on \p{circle.tex} to get an HTML
+version of the document with the same content.  As \TeX2page is written in
+Scheme, it will automatically convert the \p{\eval}s in \p{circle.tex}
+without requiring you to call Scheme separately.
+
+\p{
+tex2page circle
+}
+
+\n N.B.  \TeX\ documents intended to be processed by \TeX2page typically load the
+macro file \p{tex2page.tex}.  Please see the \TeX2page documentation for
+more details.
+
+\beginchapter 2 Using eval
+
+\index{eval@\p{\eval}}
+
+Everything of course depends on what the Scheme code
+inside the \p{\eval}s is.  As above, one can use Scheme
+as a scratchpad to perform calculations that are beyond
+\TeX.  But one can also use \p{\eval} to define a
+specification language in Scheme, and then make
+effective use of that language in subsequent
+\p{\eval}s.
+
+In the following, we use a {\em picture language}
+called PicScheme, which is defined in Scheme.  The
+operators of PicScheme generate \TeX\ and
+MetaPost~\cite{metapost,metafont} code fragments, but
+their true power lies in their allowing the use of the
+high-level language Scheme to compose complex pictures.
+The PicScheme code is defined inside an \p{\eval} in
+the \TeX\ macro file \p{picscheme.tex}.  For a sample use
+of PicScheme, create a file \p{circlepic.tex} with
+the following contents:
+
+\verbwritefile picscheme-pi-pictured
+\verbwrite{
+\eval{
+(set! *unit-length* (dimen 4 'cm))
+
+(picture
+  (lambda ()
+    ;draw circle of dia 1 with center at (0,0)
+    (draw (full-circle))
+    ;draw horizontal diameter
+    (draw (path (point -.5 0) '-- (point .5 0)))
+    ;write length of diameter just above center
+    (label (point 0 .05) "1")
+    ;write length of circumference just outside
+    ;circle, at 45 degrees
+    (let ((x (/ .55 (sqrt 2))))
+      (label (point x x) "$\\pi$"))))
+}}
+\verbwritefile picscheme-done
+
+\p{
+\input eval4tex     % load \eval
+\input picscheme    % load picture language PicScheme
+}
+\scminput picscheme-pi-pictured
+\p{
+\bye
+}
+
+\n Note that this example contains two \p{\eval}s:
+The first is the \p{\eval} in \p{picscheme.tex}
+which defines the PicScheme operators, and the second
+is the \p{\eval} in the body of \p{circlepic.tex}
+that {\em uses} the PicScheme operators to draw the circle.
+
+We enable the \p{\eval} Scheme code in
+\p{circlepic.tex} the same way as before.  We run
+\TeX\ on \p{circlepic.tex}, then Scheme on
+\p{circlepic.eval4tex}, and then \TeX\ again on
+\p{circlepic.tex}:
+
+\p{
+tex circlepic
+racket -f circlepic.eval4tex
+tex circlepic
+}
+
+\n The resulting \p{circlepic.dvi} has the
+following picture:
+
+\quote
+\input picscheme-pi-pictured
+\endquote
+
+\n In addition, you can run \TeX2page directly on
+\p{circlepic.tex} to produce a Web-browsable
+version:
+
+\p{
+tex2page circlepic
+}
+
+We will now describe in detail the capabilities
+provided by PicScheme.
+
+\beginchapter 3 Drawing \TeX\ pictures with PicScheme
+
+\index{PicScheme}
+\index{picscheme.tex@\p{picscheme.tex}}
+
+PicScheme, or the Scheme code in \p{picscheme.tex},
+provides a set of picture-making primitives that is
+similar in spirit to La\TeX's \p{{picture}}
+environment~\cite[ch.~7]{latex}, except that the
+commands are in Scheme and can be combined using full
+Scheme.
+
+You can specify {\em picture objects} such as
+paths and texts and position
+them in a composite picture object called a {\em picture}.
+In general, a picture specification looks as follows:
+
+\p+
+\eval{
++
+\q{
+...
+;Scheme code, enhanced with
+;the picture-drawing primitives
+...
+}
+\p+
+}
++
+
+\n The picture produced is a {\em box}, which means it
+will be typeset as a giant letter might be.
+We can use the usual \TeX\ approaches to centering and
+displaying boxes, eg, \p{\centerline}.
+
+\index{unit-length@\q{*unit-length*}}
+
+The picture description makes use of a {\em unit
+length}, which is stored in the variable \q{*unit-length*}
+and is by default 1 bp (big point), which is 1/72 of an inch.
+Regardless of the \q{*unit-length*}, PicScheme
+internally manipulates lengths as multiples of big
+points, and thus the default initial value of
+of \q{*unit-length*} is the {\em number} 1.
+
+\index{dimen@\q{dimen}}
+
+In order to allow the resetting of \q{*unit-length*} easily,
+PicScheme provides the procedure \q{dimen}, which converts
+lengths in other units to scaled points.  For example,
+
+\q{
+(dimen 1 'in)
+}
+
+\n returns the bp equivalent of 1 inch, which is 72.
+\q{dimen}'s second argument is thus a symbol naming the
+unit converted from, and this can be one of \q{pt}
+(point), \q{pc} (pica), \q{in} (inch), \q{bp} (big
+point), \q{cm} (centimeter), \q{mm} (millimeter),
+\q{dd} (didot point), \q{cc} (cicero), and \q{sp}
+(scaled
+point)~\cite[ch.~10]{tex},~\cite[ch.~11]{metafont}.
+(The word {\em dimen} is merely standard \TeX\ jargon for
+(non-springy) length --- the only physical dimension
+that is relevant to typesetting.)
+
+We can thus
+set \q{*unit-length*} to be 42 mm by
+
+\q{
+(set! *unit-length* (* 42 (/ 25.4) 72))
+}
+
+\n where we make use of the equivalences 1 mm = 1/25.4 inch,
+1 inch = 72 bp, or, we could say
+
+\q{
+(set! *unit-length* (dimen 42 'mm))
+}
+
+\n Use whichever is easier for you.  Changing
+\q{*unit-length*} is a convenient way to scale a
+picture without rewriting its innards.
+
+\index{pencil-width@\q{pencil-width}}
+
+An important length quantity is
+the {\em thickness} of (the lead of) the imaginary pencil used to
+draw a PicScheme picture.  By default this is 0.5 bp.
+You may reset it using the \p{pencil-width} procedure.
+Thus
+
+\q{
+(pencil-width 1/72)
+}
+
+\n sets the pencil width to 1/72 of whatever the
+prevailing \q{*unit-length*} is.  (Setting pencil width is
+probably the only occasion where it may be more
+convenient to specify a true length in bp rather than a
+multiple of the prevailing \q{*unit-length*}.  To set
+it to 0.5 bp, you can use
+\q{(pencil-width (/ (dimen .5 'bp) *unit-length*))},
+which does the correct thing regardless of the value of
+\q{*unit-length*}.)
+
+\index{thin-lines@\q{thin-lines}}
+\index{thick-lines@\q{thick-lines}}
+
+The 0-argument procedures
+\q{thin-lines} and \q{thick-lines} can be used to toggle between
+the default pencil width and a value that is twice the
+default width.
+\q{(thin-lines)} sets pencil
+thickness to the default .5 bp, while
+\q{(thick-lines)} sets it to 1 bp.
+
+\index{picture@\q{picture}}
+
+A picture is introduced by a call to the
+\q{picture} procedure:
+
+\q{
+(picture th)
+}
+
+\n
+\q{th} is a thunk (zero-argument procedure) that
+will contain commands to populate the picture.
+For example,
+
+\index{label@\q{label}}
+\index{point@\q{point}}
+
+\verbwritefile picscheme-nothing-special
+\verbwrite{
+\eval{
+(set! *unit-length* (dimen 1 'cm))
+
+(picture
+  (lambda ()
+   (label (point 0 0) "nothing special")))
+}}
+\verbwritefile picscheme-done
+
+\p+
+\centerline{
++
+\scminput picscheme-nothing-special
+\p+
+}
++
+
+\n produces
+
+\quote
+\c{\input picscheme-nothing-special }
+\endquote
+
+The only ``picture'' here is a text object, created by
+the procedure \q{label}, but it
+nevertheless  serves to illustrate the use of
+coordinates.  The procedure \q{point} makes a point
+from its $x$- and $y$-coordinates.  PicScheme represents
+fully determined points as complex numbers, with the $x$-coordinate
+as the real part and the $y$-coordinate as the imaginary
+part, so \q{(point 2 3)} can be more succinctly entered
+as \q{2+3i}.  In particular, \q{(point 0 0)} is simply
+\q{0}.  In the following, we will use the shorter
+complex-number notation when feasible.
+
+The first argument to \q{label} is
+the
+point at which to place
+the second argument, which can be any valid \TeX\
+fragment.
+Eg\f{Henceforth, the \p{\centerline{...}} wrapper around the
+Scheme code is understood.}
+
+\verbwritefile picscheme-news
+\verbwrite{
+\eval{
+(picture
+  (lambda ()
+    (label -3 "West")
+    (label +3i "North")
+    (label 3 "East")
+    (label -3i "South")))
+}}
+\verbwritefile picscheme-done
+\scminput picscheme-news
+
+\n produces
+
+\quote
+\c{\input picscheme-news }
+\endquote
+
+\index{label@\q{label}!positioning}
+
+\n Note that the center of the text coincides with the
+point supplied.
+\q{label} can take a third argument that can place
+the text at a different relation to the chosen point.
+
+In the following example, the \q{label}'s point is
+the center of the ``cross hairs'', and we use the
+position indicators \q{ulft} and \q{lrt}
+to put the text \q{"UPPER LEFT"} on the upper left of the
+point,
+and the  text \q{"LOWER RIGHT"}
+on its lower right.
+The various position
+possibilities are \q{lft}, \q{ulft}, \q{top},
+\q{urt}, \q{rt}, \q{lrt}, \q{bot}, \q{llft}.
+
+\index{path@\q{path}}
+\index{draw@\q{draw}}
+
+\verbwritefile picscheme-ulft-lrt
+\verbwrite{
+\eval{
+(picture
+  (lambda ()
+    (draw (path -2.5i '-- +2.5i))
+    (draw (path -2.5 '-- 2.5))
+    ;
+    (label 0 "UPPER LEFT" 'ulft)
+    (label 0 "LOWER RIGHT" 'lrt)))
+}}
+\verbwritefile picscheme-done
+\scminput picscheme-ulft-lrt
+
+\n produces
+
+\quote
+\c{\input picscheme-ulft-lrt }
+\endquote
+
+\index{path@\q{path}!--@\q{--}}
+\index{path@\q{path}!**@\q{**}}
+\index{path@\q{path}!direction@\q{direction}}
+\index{path@\q{path}!controls@\q{controls}}
+\index{path@\q{path}!cycle@\q{cycle}}
+
+\n The procedure \q{path} returns a path
+passing through a sequence of points.
+The form of the path between successive points is
+governed by the symbols \q{--} and \q{**}, which produce straight-line
+and curved segments respectively.  Additional arguments such
+as \q{direction}, \q{controls} (with \q{and}), and \q{cycle}
+can further alter the path.
+The procedure
+\q{draw} draws its argument path.
+
+\verbwritefile picscheme-path-ex
+\verbwrite{
+\eval{
+(set! *unit-length* (dimen 1 'cm))
+
+(picture
+  (lambda ()
+    (draw (path 0 '-- 10 '-- 10+10i '-- +10i '-- 'cycle))
+    (let ((lft-control-point 3+12i)
+          (rt-control-point 7+12i))
+      (draw (path 2+2i '**
+                  'controls lft-control-point
+                  '** 7+2i))
+      (draw (path 3+2i '**
+                  'controls rt-control-point
+                  '** 8+2i)))
+    (label 9.8+0.2i
+           "{\\it 020203120702, 030207120802}"
+           'ulft)))
+}}
+\verbwritefile picscheme-done
+\scminput picscheme-path-ex
+
+\n produces
+
+\quote
+\c{\input picscheme-path-ex }
+\endquote
+
+\n \q{'controls z1}
+uses \q{z1} as a control point (instead of having the path pass through it) for
+the enclosing points.
+For instance, a Bezier curve with the three points
+\q{z1}, \q{zc}, \q{z2}
+connects \q{z1} and \q{z2} using
+\q{zc} as a control point, and can be represented as
+
+\q{
+(path z1 '** 'controls zc '** z2)
+}
+
+\q{'controls z1 'and z2} uses both \q{z1} and \q{z2} as control points
+for the enclosing points.
+\q{cycle}, if it occurs at all, should be the
+last argument, and returns a closed path.  \q{direction}
+governs the direction of the part of the path at
+the adjacent point (which could be directly to the left or to the right).
+
+\n Here is a {\em grid}:
+
+\verbwritefile picscheme-grid
+\verbwrite{
+\eval{
+(set! *unit-length* (dimen .5 'cm))
+
+(picture
+  (lambda ()
+    ;draw vertical lines
+    (let loop ((x 0))
+      (when (<= x 20)
+        ((if (= (modulo x 5) 0)
+             thick-lines thin-lines))
+        (draw (path (point x 0) '-- (point x 10)))
+        (loop (+ x 1))))
+    ;draw horizontal lines
+    (let loop ((y 0))
+      (when (<= y 10)
+        ((if (= (modulo y 5) 0)
+             thick-lines thin-lines))
+        (draw (path (point 0 y) '-- (point 20 y)))
+        (loop (+ y 1))))
+    (thin-lines)))
+}}
+\verbwritefile picscheme-done
+\scminput picscheme-grid
+
+\n produces
+
+\quote
+\c{\input picscheme-grid }
+\endquote
+
+\index{draw-arrow@\q{draw-arrow}}
+\index{draw-double-arrow@\q{draw-double-arrow}}
+
+\q{draw-arrow} is similar to
+\q{draw} except it attaches an arrow to the end of
+the path.  \q{draw-double-arrow} attaches arrows to
+both the beginning and end of the path.
+
+\index{quarter-circle@\q{quarter-circle}}
+\index{half-circle@\q{half-circle}}
+\index{full-circle@\q{full-circle}}
+\index{unit-square@\q{unit-square}}
+
+The thunks \q{quarter-circle}, \q{half-circle} and
+\q{full-circle} return the relevant portions of a
+circle of diameter unity and center at the origin.
+\q{unit-square} returns a unit square with its lower
+left at the origin.
+
+\index{shift@\q{shift}}
+\index{rotate@\q{rotate}}
+\index{rotate-about@\q{rotate-about}}
+\index{reflect-about@\q{reflect-about}}
+\index{slant@\q{slant}}
+\index{scale@\q{scale}}
+\index{x-scale@\q{x-scale}}
+\index{y-scale@\q{y-scale}}
+\index{z-scale@\q{z-scale}}
+\index{transformation}
+
+Being so pegged to the origin is not a problem, as
+one can {\em transform} paths using
+the procedures
+\q{shift}, \q{rotate},
+\q{rotate-about},
+\q{reflect-about},
+\q{slant},
+\q{scale},
+\q{x-scale},
+\q{y-scale}, and
+\q{z-scale}~\cite[ch.~15]{metafont}.
+
+\index{x-part@\q{x-part}}
+\index{y-part@\q{y-part}}
+
+\verbwritefile picscheme-square-peg
+\verbwrite{
+\eval{
+(define rectangle
+  (lambda (z1 z4)
+    (let ((x1 (x-part z1))
+          (y1 (y-part z1))
+          (x4 (x-part z4))
+          (y4 (y-part z4)))
+      (path z1 '-- (point x4 y1) '-- z4
+            '-- (point x1 y4) '-- 'cycle))))
+
+(picture
+  (lambda ()
+    (label 0 "\\vbox{\\hbox{square}\\hbox{peg}}" 'llft)
+    (label 4+3i "\\vbox{\\hbox{round}\\hbox{hole}}" 'urt)
+    ;draw circle of dia = 8
+    (draw (scale 8 (full-circle)))
+    ;for square to fit in circle,
+    ;its side must be 8/(sqrt 2)
+    (let* ((s (/ 8 (sqrt 2)))
+           (s/2 (/ s 2)))
+      (draw (rectangle (point (- s/2) (- s/2))
+                       (point s/2 s/2))))))
+}}
+\verbwritefile picscheme-done
+\scminput picscheme-square-peg
+
+\n produces
+
+\quote
+\c{\input picscheme-square-peg }
+\endquote
+
+The procedures \q{x-part} and \q{y-part} return the
+$x$- and $y$-coordinate respectively of their argument
+point.
+
+In the following program for a spoked wheel,
+the path for the spoke is created only once,
+but we draw several differently rotated
+versions of it.
+
+\verbwritefile picscheme-spokes
+\verbwrite{
+\eval{
+(set! *unit-length* (dimen 1 'cm))
+
+(picture
+  (lambda ()
+    ;draw two concentric circles for wheel rim
+    (let ((c (full-circle)))
+      (draw (scale 4 c))
+      (draw (scale 4.5 c)))
+    (let ((one-deg (let ((pi (acos -1)))
+                     (/ pi 180))))
+      ;one-deg is 1 degree in radians
+      (let ((spoke (path 0 '-- 2)))
+        ;draw spoke at 20-deg increments
+        (let loop ((i 0))
+          (unless (>= i 360)
+            (draw (rotate (* i one-deg) spoke))
+            (loop (+ i 20))))))))
+}}
+\verbwritefile picscheme-done
+\scminput picscheme-spokes
+
+\n produces
+
+\quote
+\c{\input picscheme-spokes }
+\endquote
+
+\beginchapter 4 References
+
+\bibliographystyle{plain}
+\bibliography{tex2page}
+
+\beginchapter 5 Index
+
+\inputindex
+
+\bye

@@ -1,0 +1,40 @@
+Apr 29, 2012
+
+picscheme.tex: s/MzScheme/Racket/
+
+May 6, 2009
+
+Use \TZPcommonlisp (which user must set) to decide whether to wrap CL-
+or Scheme-specific code.
+
+Apr 26, 2005
+
+The file produced by running TeX on a document that uses eval4tex.tex now
+contains Scheme code that can be directly loaded into Scheme (that need not
+have tex2page procedures loaded also).  
+
+Read | as escape (i.e., with catcode 0) within \eval's argument.  This
+allows user to put arguments fashioned from outside into the Scheme code. 
+
+Separated out eval4tex.tex and picscheme.tex and related doc from the
+tex2page distribution, as these can be used without tex2page.  For previous
+history of eval4tex and picscheme, see the tex2page history file for the
+dates:
+
+May 28, 2003
+
+May 27, 2003
+
+May 26, 2003
+
+Dec 25, 2002
+
+Dec 24, 2002 (eval4tex born)
+
+Jan 16, 2001 
+
+Jan 9, 2001 
+
+Dec 20, 2000
+
+Nov 16, 2000 (picscheme born)
