@@ -1,3 +1,13 @@
+2017 Jan 16
+
+Changed aux file name to jobname-Z-E.lisp (from jobname.eval4tex), in
+keeping with TeX2page's other aux files. Made it loadable in both CL
+and Scheme, so flag \TZPcommonlisp no longer needed.
+
+\evalq: like \eval but doesn't insert into document. (q = quiet. Useful for
+adding definitions. \eval that has nothing to insert has the same behavior, but
+\evalq is slightly more efficient.)
+
 Apr 29, 2012
 
 picscheme.tex: s/MzScheme/Racket/
@@ -11,10 +21,10 @@ Apr 26, 2005
 
 The file produced by running TeX on a document that uses eval4tex.tex now
 contains Scheme code that can be directly loaded into Scheme (that need not
-have tex2page procedures loaded also).  
+have tex2page procedures loaded also).
 
 Read | as escape (i.e., with catcode 0) within \eval's argument.  This
-allows user to put arguments fashioned from outside into the Scheme code. 
+allows user to put arguments fashioned from outside into the Scheme code.
 
 Separated out eval4tex.tex and picscheme.tex and related doc from the
 tex2page distribution, as these can be used without tex2page.  For previous
@@ -31,9 +41,9 @@ Dec 25, 2002
 
 Dec 24, 2002 (eval4tex born)
 
-Jan 16, 2001 
+Jan 16, 2001
 
-Jan 9, 2001 
+Jan 9, 2001
 
 Dec 20, 2000
 

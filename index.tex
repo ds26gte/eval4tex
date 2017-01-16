@@ -3,9 +3,11 @@
 \input texnames.sty
 \input picscheme
 
-% last change: 2015-06-01
+% last change: 2017-01-16
 
 \let\n\noindent
+\let\p\verb
+\let\q\scm
 \def\meta[#1]{{\em #1}}
 \let\c\centerline
 \let\f\numberedfootnote
@@ -35,7 +37,7 @@ and}
 
 \medskip
 
-\c{\htmlonly Download \endhtmlonly
+\c{\ifx\shipout\UnDeFinED Download \fi
 \urlh{https://github.com/ds26gte/eval4tex}{Version 20090506}}
 \c{\urlh{http://ds26gte.github.io}{Dorai Sitaram}}
 %\c{(PicScheme is part of the
@@ -49,7 +51,7 @@ and}
 %features to TeX besides pictures.
 
 \n I shall first describe how to set up Scheme as an
-extension language for \TeX~\cite{tex,latex}, then show how this
+extension language for \TeX~\cite{texbook,latex}, then show how this
 mechanism can add powerful features to \TeX, using
 as example a high-level picture language.
 
@@ -112,14 +114,14 @@ tex circle
 
 \n (If \p{circle.tex} were a La\TeX\ file, you would use
 \p{latex circle} here.) This creates an
-auxiliary file called \p{circle.eval4tex}
+auxiliary file called \p{circle-Z-E.lisp}
 that extracts the \p{\eval}-embedded Scheme code from \p{circle.tex}.
 
-Now evaluate the Scheme file \p{circle.eval4tex}.  For example, with
+Now evaluate the Scheme file \p{circle-Z-E.lisp}.  For example, with
 Racket, you could do
 
 \p{
-racket -f circle.eval4tex
+racket -f circle-Z-E.lisp
 }
 
 \n This produces an auxiliary \TeX\ file \p{circle-Z-E-1.tex}
@@ -144,7 +146,7 @@ the \p{\eval}, so the final DVI output,
 To summarize, we did
 
 \p{
-tex circle; racket -f circle.eval4tex; tex circle
+tex circle; racket -f circle-Z-E.lisp; tex circle
 }
 
 \n The first call to \p{tex} wrote out an aux file; the
@@ -189,7 +191,7 @@ effective use of that language in subsequent
 In the following, we use a {\em picture language}
 called PicScheme, which is defined in Scheme.  The
 operators of PicScheme generate \TeX\ and
-MetaPost~\cite{metapost,metafont} code fragments, but
+MetaPost~\cite{metapost,mfbook} code fragments, but
 their true power lies in their allowing the use of the
 high-level language Scheme to compose complex pictures.
 The PicScheme code is defined inside an \p{\eval} in
@@ -235,12 +237,12 @@ that {\em uses} the PicScheme operators to draw the circle.
 We enable the \p{\eval} Scheme code in
 \p{circlepic.tex} the same way as before.  We run
 \TeX\ on \p{circlepic.tex}, then Scheme on
-\p{circlepic.eval4tex}, and then \TeX\ again on
+\p{circlepic-Z-E.lisp}, and then \TeX\ again on
 \p{circlepic.tex}:
 
 \p{
 tex circlepic
-racket -f circlepic.eval4tex
+racket -f circlepic-Z-E.lisp
 tex circlepic
 }
 
@@ -324,7 +326,7 @@ unit converted from, and this can be one of \q{pt}
 point), \q{cm} (centimeter), \q{mm} (millimeter),
 \q{dd} (didot point), \q{cc} (cicero), and \q{sp}
 (scaled
-point)~\cite[ch.~10]{tex},~\cite[ch.~11]{metafont}.
+point)~\cite[ch.~10]{texbook},~\cite[ch.~11]{mfbook}.
 (The word {\em dimen} is merely standard \TeX\ jargon for
 (non-springy) length --- the only physical dimension
 that is relevant to typesetting.)
@@ -640,7 +642,7 @@ the procedures
 \q{scale},
 \q{x-scale},
 \q{y-scale}, and
-\q{z-scale}~\cite[ch.~15]{metafont}.
+\q{z-scale}~\cite[ch.~15]{mfbook}.
 
 \index{x-part@\q{x-part}}
 \index{y-part@\q{y-part}}
